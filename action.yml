@@ -1,0 +1,36 @@
+name: 'Rami Code Review'
+description: 'AI-powered code review for pull requests'
+author: 'rami-code-review'
+
+branding:
+  icon: 'code'
+  color: 'purple'
+
+inputs:
+  api_key:
+    description: 'Rami API key (get one at https://rami.reviews/console)'
+    required: true
+
+outputs:
+  issues_found:
+    description: 'Number of issues found'
+    value: ${{ steps.review.outputs.issues_found }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Review PR
+      id: review
+      shell: bash
+      run: |
+        RESPONSE=$(curl -sf -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${{ inputs.api_key }}" \
+          -d '{"pr_url":"${{ github.event.pull_request.html_url }}","github_token":"${{ github.token }}"}' \
+          "https://rami.reviews/api/v1/review") || {
+          echo "::error::Rami API request failed"
+          exit 1
+        }
+        ISSUES=$(echo "$RESPONSE" | jq '.issues | length')
+        echo "issues_found=$ISSUES" >> $GITHUB_OUTPUT
+        echo "::notice::Review complete - $ISSUES issue(s) found"

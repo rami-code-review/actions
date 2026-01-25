@@ -1,4 +1,4 @@
-import { RamiClient, StatusResponse } from './api';
+import { RamiClient, StatusResponse, CallbackResponse } from './api';
 
 describe('RamiClient', () => {
   const mockToken = 'mock-oidc-token';
@@ -130,6 +130,61 @@ describe('RamiClient', () => {
       const client = new RamiClient(baseUrl, mockToken);
 
       await expect(client.status({ pr_number: 101 })).rejects.toThrow('Rami status check failed: Authentication failed');
+    });
+  });
+
+  describe('registerCallback', () => {
+    let originalFetch: typeof global.fetch;
+
+    beforeEach(() => {
+      originalFetch = global.fetch;
+    });
+
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
+
+    it('should make POST request with correct headers and body', async () => {
+      const mockResponse: CallbackResponse = {
+        registered: true,
+        expires_at: '2024-01-01T00:00:00Z',
+        message: 'Workflow will be re-triggered when review becomes clean',
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(mockResponse),
+      } as Response);
+
+      const client = new RamiClient(baseUrl, mockToken);
+      const result = await client.registerCallback({ pr_number: 123 });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://rami.reviews/api/v1/actions/callback',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${mockToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ pr_number: 123 }),
+        })
+      );
+      expect(result.registered).toBe(true);
+    });
+
+    it('should throw on HTTP error', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('Internal Server Error'),
+      } as Response);
+
+      const client = new RamiClient(baseUrl, mockToken);
+
+      await expect(client.registerCallback({ pr_number: 123 })).rejects.toThrow(
+        'Rami callback registration failed (500): Internal Server Error'
+      );
     });
   });
 });

@@ -17,6 +17,9 @@ jobs:
 
       - name: Update major version tag
         run: |
+          git config user.name "Shavakan"
+          git config user.email "cs.changwon.lee@gmail.com"
+
           # Get the release tag (e.g., v1.0.0)
           TAG="${{ github.event.release.tag_name }}"
 

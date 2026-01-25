@@ -95,36 +95,6 @@ jobs:
 | `in_progress` | Review is still running (timed out waiting) |
 | `error` | Review failed due to an error |
 
-## Repository Configuration
-
-Create a `.rami.yml` file in your repository root to customize review behavior.
-
-### Example Configuration
-
-```yaml
-# .rami.yml
-
-# Filter out issues below this severity (default: low)
-# Options: blocking, high, medium, low
-severity_threshold: low
-
-# Which severities should block the PR (default: [blocking])
-block_on:
-  - blocking
-  - high
-
-# Paths to ignore (glob patterns)
-ignore_paths:
-  - "vendor/**"
-  - "**/*.generated.go"
-  - "**/*_test.go"
-
-# Paths to include (if set, only these paths are reviewed)
-include_paths:
-  - "src/**"
-  - "lib/**"
-```
-
 ## Troubleshooting
 
 ### "OIDC authentication required"

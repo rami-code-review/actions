@@ -1,0 +1,31 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update major version tag
+        run: |
+          # Get the release tag (e.g., v1.0.0)
+          TAG="${{ github.event.release.tag_name }}"
+
+          # Extract major version (e.g., v1)
+          MAJOR=$(echo "$TAG" | grep -oE '^v[0-9]+')
+
+          if [ -n "$MAJOR" ]; then
+            # Force update the major version tag
+            git tag -fa "$MAJOR" -m "Update $MAJOR tag to $TAG"
+            git push origin "$MAJOR" --force
+            echo "Updated $MAJOR to point to $TAG"
+          fi

@@ -1,36 +1,49 @@
 name: 'Rami Code Review'
-description: 'AI-powered code review for pull requests'
+description: 'AI-powered code review for your pull requests'
 author: 'rami-code-review'
 
 branding:
-  icon: 'code'
+  icon: 'eye'
   color: 'purple'
 
 inputs:
-  api_key:
-    description: 'Rami API key (get one at https://rami.reviews/console)'
-    required: true
+  pr_url:
+    description: 'Pull request URL to review (optional, auto-detected from context)'
+    required: false
+  pr_number:
+    description: 'Pull request number (optional, auto-detected from context)'
+    required: false
+  fail_on:
+    description: 'Severity level that causes the action to fail: blocking, high, medium, low, none'
+    required: false
+    default: 'blocking'
+  post_comments:
+    description: 'Whether to post review comments to the PR'
+    required: false
+    default: 'true'
+  api_url:
+    description: 'Rami API URL (defaults to production)'
+    required: false
+    default: 'https://rami.review'
 
 outputs:
-  issues_found:
-    description: 'Number of issues found'
-    value: ${{ steps.review.outputs.issues_found }}
+  status:
+    description: 'Review status: clean, issues_found, or blocked'
+  total_issues:
+    description: 'Total number of issues found'
+  blocking_count:
+    description: 'Number of blocking issues'
+  high_count:
+    description: 'Number of high severity issues'
+  medium_count:
+    description: 'Number of medium severity issues'
+  low_count:
+    description: 'Number of low severity issues'
+  files_reviewed:
+    description: 'Number of files reviewed'
+  review_url:
+    description: 'URL to the reviewed PR'
 
 runs:
-  using: 'composite'
-  steps:
-    - name: Review PR
-      id: review
-      shell: bash
-      run: |
-        RESPONSE=$(curl -sf -X POST \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer ${{ inputs.api_key }}" \
-          -d '{"pr_url":"${{ github.event.pull_request.html_url }}","github_token":"${{ github.token }}"}' \
-          "https://rami.reviews/api/v1/review") || {
-          echo "::error::Rami API request failed"
-          exit 1
-        }
-        ISSUES=$(echo "$RESPONSE" | jq '.issues | length')
-        echo "issues_found=$ISSUES" >> $GITHUB_OUTPUT
-        echo "::notice::Review complete - $ISSUES issue(s) found"
+  using: 'node20'
+  main: 'dist/index.js'

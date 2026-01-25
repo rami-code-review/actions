@@ -35260,6 +35260,11 @@ const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const api_1 = __nccwpck_require__(6879);
 const API_URL = 'https://rami.reviews';
+const MAX_POLL_TIME_MS = 5 * 60 * 1000; // 5 minutes
+const POLL_INTERVAL_MS = 15 * 1000; // 15 seconds
+async function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 async function run() {
     try {
         const failOn = core.getInput('fail_on') || 'blocking';
@@ -35272,10 +35277,34 @@ async function run() {
         core.info(`Fail on: ${failOn}`);
         const oidcToken = await core.getIDToken('https://rami.reviews');
         const client = new api_1.RamiClient(API_URL, oidcToken);
-        const response = await client.status({ pr_number: prNumber, fail_on: failOn });
+        // Poll for review completion
+        const startTime = Date.now();
+        let response;
+        let pollCount = 0;
+        while (true) {
+            pollCount++;
+            response = await client.status({ pr_number: prNumber, fail_on: failOn });
+            // Check if review is complete (not in_progress or not_found)
+            if (response.status !== 'in_progress' && response.status !== 'not_found') {
+                break;
+            }
+            // Check if we've exceeded max poll time
+            const elapsed = Date.now() - startTime;
+            if (elapsed >= MAX_POLL_TIME_MS) {
+                core.warning(`Review did not complete within ${MAX_POLL_TIME_MS / 1000} seconds`);
+                break;
+            }
+            // Log progress and wait before next poll
+            const remainingSeconds = Math.round((MAX_POLL_TIME_MS - elapsed) / 1000);
+            core.info(`Review ${response.status === 'not_found' ? 'not started yet' : 'in progress'}. ` +
+                `Waiting ${POLL_INTERVAL_MS / 1000}s before retry (${remainingSeconds}s remaining)...`);
+            await sleep(POLL_INTERVAL_MS);
+        }
+        core.info(`Poll completed after ${pollCount} attempt(s)`);
         setOutputs(response);
         core.info(`Review completed: ${response.summary}`);
         outputAnnotations(response);
+        // Handle final status
         if (response.status === 'blocked') {
             // Register callback for automatic re-trigger when review becomes clean
             try {
@@ -35292,6 +35321,11 @@ async function run() {
         }
         else if (response.status === 'error') {
             core.setFailed(`Review failed: ${response.error}`);
+        }
+        else if (response.status === 'in_progress' || response.status === 'not_found') {
+            // Timed out waiting for review
+            core.setFailed(`Review did not complete within ${MAX_POLL_TIME_MS / 1000} seconds. ` +
+                `Status: ${response.status}. Please check if the Rami GitHub App is installed and webhooks are configured.`);
         }
     }
     catch (error) {

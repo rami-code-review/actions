@@ -33,7 +33,7 @@ async function run(): Promise<void> {
     let response: StatusResponse;
     let pollCount = 0;
 
-    while (true) {
+    do {
       pollCount++;
       response = await client.status({ pr_number: prNumber, fail_on: failOn });
 
@@ -56,7 +56,8 @@ async function run(): Promise<void> {
           `Waiting ${POLL_INTERVAL_MS / 1000}s before retry (${remainingSeconds}s remaining)...`
       );
       await sleep(POLL_INTERVAL_MS);
-    }
+      // eslint-disable-next-line no-constant-condition
+    } while (true);
 
     core.info(`Poll completed after ${pollCount} attempt(s)`);
 

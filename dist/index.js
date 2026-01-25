@@ -35195,6 +35195,22 @@ class RamiClient {
         }
         return data;
     }
+    async registerCallback(request) {
+        const url = `${this.baseUrl}/api/v1/actions/callback`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${this.token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(request),
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            throw new Error(`Rami callback registration failed (${response.status}): ${text}`);
+        }
+        return (await response.json());
+    }
 }
 exports.RamiClient = RamiClient;
 
@@ -35261,6 +35277,17 @@ async function run() {
         core.info(`Review completed: ${response.summary}`);
         outputAnnotations(response);
         if (response.status === 'blocked') {
+            // Register callback for automatic re-trigger when review becomes clean
+            try {
+                const callbackResponse = await client.registerCallback({ pr_number: prNumber });
+                if (callbackResponse.registered) {
+                    core.info('Registered for automatic re-trigger when review becomes clean');
+                }
+            }
+            catch (callbackError) {
+                // Log but don't fail - callback registration is best-effort
+                core.warning(`Failed to register callback: ${callbackError}`);
+            }
             core.setFailed(`Review blocked: ${response.outputs.blocking_count} blocking issue(s) found`);
         }
         else if (response.status === 'error') {

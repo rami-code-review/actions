@@ -31,6 +31,16 @@ async function run(): Promise<void> {
     outputAnnotations(response);
 
     if (response.status === 'blocked') {
+      // Register callback for automatic re-trigger when review becomes clean
+      try {
+        const callbackResponse = await client.registerCallback({ pr_number: prNumber });
+        if (callbackResponse.registered) {
+          core.info('Registered for automatic re-trigger when review becomes clean');
+        }
+      } catch (callbackError) {
+        // Log but don't fail - callback registration is best-effort
+        core.warning(`Failed to register callback: ${callbackError}`);
+      }
       core.setFailed(`Review blocked: ${response.outputs.blocking_count} blocking issue(s) found`);
     } else if (response.status === 'error') {
       core.setFailed(`Review failed: ${response.error}`);

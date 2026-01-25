@@ -32,9 +32,18 @@ export interface StatusResponse {
     annotations?: string[];
     error?: string;
 }
+export interface CallbackRequest {
+    pr_number: number;
+}
+export interface CallbackResponse {
+    registered: boolean;
+    expires_at?: string;
+    message?: string;
+}
 export declare class RamiClient {
     private baseUrl;
     private token;
     constructor(baseUrl: string, token: string);
     status(request: StatusRequest): Promise<StatusResponse>;
+    registerCallback(request: CallbackRequest): Promise<CallbackResponse>;
 }

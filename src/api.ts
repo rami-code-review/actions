@@ -36,6 +36,16 @@ export interface StatusResponse {
   error?: string;
 }
 
+export interface CallbackRequest {
+  pr_number: number;
+}
+
+export interface CallbackResponse {
+  registered: boolean;
+  expires_at?: string;
+  message?: string;
+}
+
 export class RamiClient {
   private baseUrl: string;
   private token: string;
@@ -74,5 +84,25 @@ export class RamiClient {
     }
 
     return data;
+  }
+
+  async registerCallback(request: CallbackRequest): Promise<CallbackResponse> {
+    const url = `${this.baseUrl}/api/v1/actions/callback`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Rami callback registration failed (${response.status}): ${text}`);
+    }
+
+    return (await response.json()) as CallbackResponse;
   }
 }

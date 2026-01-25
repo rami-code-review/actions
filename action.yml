@@ -14,7 +14,7 @@ inputs:
 
 outputs:
   status:
-    description: 'Review status: clean, issues_found, or blocked'
+    description: 'Review status: clean, issues_found, blocked, not_found, in_progress, or error'
   total_issues:
     description: 'Total number of issues found'
   blocking_count:

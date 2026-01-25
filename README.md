@@ -4,16 +4,17 @@ Wait for AI-powered code review results on your pull requests. This GitHub Actio
 
 ## How It Works
 
-1. **Webhook-triggered reviews**: When you push to a PR, the Rami GitHub App automatically triggers a review via webhooks
-2. **This action waits**: The action polls for the review to complete and reports the results
-3. **CI integration**: Results appear as GitHub annotations and action outputs
+1. **Webhook-triggered reviews**: When you push to a PR, the [Rami GitHub App](https://github.com/apps/rami-code-remeow) automatically triggers a review via webhooks
+2. **This action waits**: The action calls the [Rami API](https://rami.reviews) and waits for the review to complete (up to 5 minutes)
+3. **CI integration**: Results appear as GitHub annotations on the PR files and as action outputs
+4. **Auto-retry**: If the review is blocked, the action registers for automatic workflow re-trigger when the review becomes clean
 
-The action does NOT trigger reviews - it only waits for and reports on webhook-initiated reviews.
+> **Note**: This action does NOT trigger reviews—it only waits for and reports on webhook-initiated reviews.
 
 ## Prerequisites
 
 1. **Rami GitHub App**: Install the [Rami GitHub App](https://github.com/apps/rami-code-remeow) on your repository
-2. **Organization Setup**: Your organization must be registered with Rami
+2. **Plan Requirements**: Your organization must have a **Team+ plan**, or for personal accounts, a **Pro+ plan**. See [pricing](https://rami.reviews/pricing) for details.
 
 ## Usage
 
@@ -27,8 +28,6 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: read
-  pull-requests: write
   id-token: write  # Required for OIDC authentication
 
 jobs:
@@ -36,18 +35,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Rami Code Review
-        uses: rami-code-review/actions@v1
+        uses: rami-actions/rami-actions@v1
 ```
 
 ### With Custom Failure Threshold
 
 ```yaml
 - name: Rami Code Review
-  uses: rami-code-review/actions@v1
+  uses: rami-actions/rami-actions@v1
   with:
     # Fail the action if issues at this severity or above are found
     # Options: blocking, high, medium, low, none
-    fail_on: 'high'
+    fail_on: high
 ```
 
 ### Using Outputs
@@ -55,13 +54,15 @@ jobs:
 ```yaml
 - name: Rami Code Review
   id: review
-  uses: rami-code-review/actions@v1
+  uses: rami-actions/rami-actions@v1
 
 - name: Check Review Results
+  if: always()
   run: |
     echo "Status: ${{ steps.review.outputs.status }}"
     echo "Total Issues: ${{ steps.review.outputs.total_issues }}"
     echo "Blocking: ${{ steps.review.outputs.blocking_count }}"
+    echo "Files Reviewed: ${{ steps.review.outputs.files_reviewed }}"
 ```
 
 ## Inputs
@@ -74,25 +75,63 @@ jobs:
 
 | Output | Description |
 |--------|-------------|
-| `status` | Review status: `clean`, `issues_found`, or `blocked` |
+| `status` | Review status (see table below) |
 | `total_issues` | Total number of issues found |
-| `blocking_count` | Number of blocking issues |
+| `blocking_count` | Number of blocking/critical issues |
 | `high_count` | Number of high severity issues |
 | `medium_count` | Number of medium severity issues |
 | `low_count` | Number of low severity issues |
 | `files_reviewed` | Number of files reviewed |
 | `review_url` | URL to the reviewed PR |
 
+### Status Values
+
+| Status | Description |
+|--------|-------------|
+| `clean` | Review completed with no issues |
+| `issues_found` | Issues found but below the `fail_on` threshold |
+| `blocked` | Issues found at or above the `fail_on` threshold (action fails) |
+| `not_found` | No review found—webhook may not have triggered yet |
+| `in_progress` | Review is still running (timed out waiting) |
+| `error` | Review failed due to an error |
+
 ## Repository Configuration
 
-Create a `.rami.yml` file in your repository root to customize review behavior:
+Create a `.rami.yml` file in your repository to customize review behavior. Rami looks for configuration in these locations (in order):
+
+1. `.rami.yml`
+2. `.rami.yaml`
+3. `.github/rami.yml`
+4. `.github/rami.yaml`
+
+### Example Configuration
 
 ```yaml
 # .rami.yml
-fail_on: high          # Override default fail_on threshold
+version: "1"
+
+# Filter out issues below this severity (default: low)
+# Options: blocking, high, medium, low
+severity_threshold: low
+
+# Which severities should block the PR (default: [blocking])
+block_on:
+  - blocking
+  - high
+
+# Paths to ignore (glob patterns)
 ignore_paths:
   - "vendor/**"
   - "**/*.generated.go"
+  - "**/*_test.go"
+
+# Paths to include (if set, only these paths are reviewed)
+include_paths:
+  - "src/**"
+  - "lib/**"
+
+# Review preset: strict, standard, or lenient
+preset: standard
 ```
 
 ## Troubleshooting
@@ -106,14 +145,34 @@ permissions:
   id-token: write
 ```
 
-### "Failed to authenticate with GitHub"
+### "Not authorized for GitHub Actions integration"
 
-The Rami GitHub App must be installed on your repository. Visit the [Rami GitHub App](https://github.com/apps/rami-code-remeow) to install it.
+Your organization or personal account needs the appropriate plan:
+- **Organizations**: Team plan or higher
+- **Personal accounts**: Pro+ plan
 
-### "Review not found"
+Visit [rami.reviews/pricing](https://rami.reviews/pricing) for plan details.
 
-The review may not have been triggered yet. Ensure the Rami GitHub App is installed and the webhook is configured correctly. The action will wait for the review to complete.
+### "Review not found" / "No review found for this PR"
+
+The webhook-triggered review may not have started yet. Possible causes:
+- The [Rami GitHub App](https://github.com/apps/rami-code-remeow) is not installed on the repository
+- The webhook hasn't been processed yet (the action will wait up to 5 minutes)
+- The PR was created before the app was installed
+
+### Action times out or shows "in_progress"
+
+The action waits up to 5 minutes for reviews to complete. If your reviews consistently take longer:
+- Reduce the number of files changed per PR
+- Use `ignore_paths` in `.rami.yml` to exclude generated or vendor files
+- Split large PRs into smaller ones
+
+## Links
+
+- **Website**: [rami.reviews](https://rami.reviews)
+- **Pricing**: [rami.reviews/pricing](https://rami.reviews/pricing)
+- **GitHub App**: [github.com/apps/rami-code-remeow](https://github.com/apps/rami-code-remeow)
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License—see [LICENSE](LICENSE) for details.

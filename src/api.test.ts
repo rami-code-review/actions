@@ -2,12 +2,12 @@ import { RamiClient, StatusResponse } from './api';
 
 describe('RamiClient', () => {
   const mockToken = 'mock-oidc-token';
-  const baseUrl = 'https://rami.review';
+  const baseUrl = 'https://rami.reviews';
 
   describe('constructor', () => {
     it('should strip trailing slash from base URL', () => {
-      const client = new RamiClient('https://rami.review/', mockToken);
-      expect((client as unknown as { baseUrl: string }).baseUrl).toBe('https://rami.review');
+      const client = new RamiClient('https://rami.reviews/', mockToken);
+      expect((client as unknown as { baseUrl: string }).baseUrl).toBe('https://rami.reviews');
     });
   });
 
@@ -48,7 +48,7 @@ describe('RamiClient', () => {
       const result = await client.status({ pr_number: 123 });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://rami.review/api/v1/actions/status?pr_number=123',
+        'https://rami.reviews/api/v1/actions/status?pr_number=123',
         expect.objectContaining({
           method: 'GET',
           headers: {
@@ -85,7 +85,7 @@ describe('RamiClient', () => {
       await client.status({ pr_number: 456, fail_on: 'high' });
 
       expect(global.fetch).toHaveBeenCalledWith(
-        'https://rami.review/api/v1/actions/status?pr_number=456&fail_on=high',
+        'https://rami.reviews/api/v1/actions/status?pr_number=456&fail_on=high',
         expect.objectContaining({
           method: 'GET',
         })

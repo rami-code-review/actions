@@ -1,9 +1,6 @@
-export interface ReviewRequest {
-  pr_url?: string;
-  pr_number?: number;
-  repository?: string;
+export interface StatusRequest {
+  pr_number: number;
   fail_on?: string;
-  post_comments?: boolean;
 }
 
 export interface ReviewIssue {
@@ -29,7 +26,7 @@ export interface ReviewOutputs {
   review_url: string;
 }
 
-export interface ReviewResponse {
+export interface StatusResponse {
   status: string;
   pr_url: string;
   summary: string;
@@ -48,16 +45,21 @@ export class RamiClient {
     this.token = token;
   }
 
-  async review(request: ReviewRequest): Promise<ReviewResponse> {
-    const url = `${this.baseUrl}/api/v1/actions/review`;
+  async status(request: StatusRequest): Promise<StatusResponse> {
+    const params = new URLSearchParams();
+    params.set('pr_number', request.pr_number.toString());
+    if (request.fail_on) {
+      params.set('fail_on', request.fail_on);
+    }
+
+    const queryString = params.toString();
+    const url = `${this.baseUrl}/api/v1/actions/status${queryString ? `?${queryString}` : ''}`;
 
     const response = await fetch(url, {
-      method: 'POST',
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         Authorization: `Bearer ${this.token}`,
       },
-      body: JSON.stringify(request),
     });
 
     if (!response.ok) {
@@ -65,11 +67,10 @@ export class RamiClient {
       throw new Error(`Rami API request failed (${response.status}): ${text}`);
     }
 
-    const data = (await response.json()) as ReviewResponse;
+    const data = (await response.json()) as StatusResponse;
 
-    // API returns 200 even for errors, check status field
     if (data.status === 'error' && data.error) {
-      throw new Error(`Rami review failed: ${data.error}`);
+      throw new Error(`Rami status check failed: ${data.error}`);
     }
 
     return data;

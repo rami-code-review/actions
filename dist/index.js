@@ -29936,24 +29936,27 @@ class RamiClient {
         this.baseUrl = baseUrl.replace(/\/$/, '');
         this.token = token;
     }
-    async review(request) {
-        const url = `${this.baseUrl}/api/v1/actions/review`;
+    async status(request) {
+        const params = new URLSearchParams();
+        params.set('pr_number', request.pr_number.toString());
+        if (request.fail_on) {
+            params.set('fail_on', request.fail_on);
+        }
+        const queryString = params.toString();
+        const url = `${this.baseUrl}/api/v1/actions/status${queryString ? `?${queryString}` : ''}`;
         const response = await fetch(url, {
-            method: 'POST',
+            method: 'GET',
             headers: {
-                'Content-Type': 'application/json',
                 Authorization: `Bearer ${this.token}`,
             },
-            body: JSON.stringify(request),
         });
         if (!response.ok) {
             const text = await response.text();
             throw new Error(`Rami API request failed (${response.status}): ${text}`);
         }
         const data = (await response.json());
-        // API returns 200 even for errors, check status field
         if (data.status === 'error' && data.error) {
-            throw new Error(`Rami review failed: ${data.error}`);
+            throw new Error(`Rami status check failed: ${data.error}`);
         }
         return data;
     }
@@ -30005,36 +30008,23 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const api_1 = __nccwpck_require__(6879);
+const API_URL = 'https://rami.review';
 async function run() {
     try {
-        // Get inputs
-        const apiUrl = core.getInput('api_url') || 'https://rami.review';
         const failOn = core.getInput('fail_on') || 'blocking';
-        const postComments = core.getInput('post_comments') !== 'false';
-        // Resolve PR context
-        const { prUrl, prNumber, repository } = resolvePRContext();
-        core.info(`Reviewing PR: ${prUrl}`);
+        // Get PR number from GitHub context
+        const prNumber = github.context.payload.pull_request?.number;
+        if (!prNumber) {
+            throw new Error('Could not determine PR number. This action must run on pull_request events.');
+        }
+        core.info(`Checking review status for PR #${prNumber}...`);
         core.info(`Fail on: ${failOn}`);
-        core.info(`Post comments: ${postComments}`);
-        // Get OIDC token for authentication
-        // Audience must match server's RamiAudience constant
         const oidcToken = await core.getIDToken('https://rami.review');
-        // Create API client and run review
-        const client = new api_1.RamiClient(apiUrl, oidcToken);
-        const response = await client.review({
-            pr_url: prUrl,
-            pr_number: prNumber,
-            repository,
-            fail_on: failOn,
-            post_comments: postComments,
-        });
-        // Set outputs
+        const client = new api_1.RamiClient(API_URL, oidcToken);
+        const response = await client.status({ pr_number: prNumber, fail_on: failOn });
         setOutputs(response);
-        // Log summary
         core.info(`Review completed: ${response.summary}`);
-        // Output annotations for GitHub Actions UI
         outputAnnotations(response);
-        // Determine if we should fail
         if (response.status === 'blocked') {
             core.setFailed(`Review blocked: ${response.outputs.blocking_count} blocking issue(s) found`);
         }
@@ -30050,44 +30040,6 @@ async function run() {
             core.setFailed('An unexpected error occurred');
         }
     }
-}
-function resolvePRContext() {
-    // Check for explicit inputs first
-    let prUrl = core.getInput('pr_url');
-    let prNumber = parseInt(core.getInput('pr_number'), 10) || 0;
-    const context = github.context;
-    const repository = `${context.repo.owner}/${context.repo.repo}`;
-    // If PR URL provided, use it
-    if (prUrl) {
-        // Extract PR number from URL if not provided
-        if (!prNumber) {
-            const match = prUrl.match(/\/pull\/(\d+)/);
-            if (match) {
-                prNumber = parseInt(match[1], 10);
-            }
-        }
-        return { prUrl, prNumber, repository };
-    }
-    // Try to get PR number from context
-    if (!prNumber) {
-        if (context.payload.pull_request) {
-            prNumber = context.payload.pull_request.number;
-        }
-        else if (context.payload.issue?.pull_request) {
-            prNumber = context.payload.issue.number;
-        }
-        else if (context.eventName === 'push') {
-            // For push events, we can't determine PR number automatically
-            throw new Error('Cannot determine PR number from push event. Please provide pr_url or pr_number input, ' +
-                'or use this action on pull_request events.');
-        }
-    }
-    if (!prNumber) {
-        throw new Error('Could not determine PR number. Please provide pr_url or pr_number input, ' +
-            'or ensure this action runs on a pull_request event.');
-    }
-    prUrl = `https://github.com/${repository}/pull/${prNumber}`;
-    return { prUrl, prNumber, repository };
 }
 function setOutputs(response) {
     core.setOutput('status', response.outputs.status);

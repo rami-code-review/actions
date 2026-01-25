@@ -1,5 +1,5 @@
 name: 'Rami Code Review'
-description: 'AI-powered code review for your pull requests'
+description: 'Wait for AI-powered code review results on your pull requests'
 author: 'rami-code-review'
 
 branding:
@@ -7,24 +7,10 @@ branding:
   color: 'purple'
 
 inputs:
-  pr_url:
-    description: 'Pull request URL to review (optional, auto-detected from context)'
-    required: false
-  pr_number:
-    description: 'Pull request number (optional, auto-detected from context)'
-    required: false
   fail_on:
     description: 'Severity level that causes the action to fail: blocking, high, medium, low, none'
     required: false
     default: 'blocking'
-  post_comments:
-    description: 'Whether to post review comments to the PR'
-    required: false
-    default: 'true'
-  api_url:
-    description: 'Rami API URL (defaults to production)'
-    required: false
-    default: 'https://rami.review'
 
 outputs:
   status:

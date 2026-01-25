@@ -1,9 +1,6 @@
-export interface ReviewRequest {
-    pr_url?: string;
-    pr_number?: number;
-    repository?: string;
+export interface StatusRequest {
+    pr_number: number;
     fail_on?: string;
-    post_comments?: boolean;
 }
 export interface ReviewIssue {
     file_path: string;
@@ -26,7 +23,7 @@ export interface ReviewOutputs {
     files_reviewed: number;
     review_url: string;
 }
-export interface ReviewResponse {
+export interface StatusResponse {
     status: string;
     pr_url: string;
     summary: string;
@@ -39,5 +36,5 @@ export declare class RamiClient {
     private baseUrl;
     private token;
     constructor(baseUrl: string, token: string);
-    review(request: ReviewRequest): Promise<ReviewResponse>;
+    status(request: StatusRequest): Promise<StatusResponse>;
 }

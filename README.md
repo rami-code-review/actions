@@ -1,13 +1,14 @@
 # Rami Code Review Action
 
-AI-powered code review for your pull requests. This GitHub Action integrates [Rami](https://rami.review) into your CI/CD pipeline to automatically review code changes.
+Wait for AI-powered code review results on your pull requests. This GitHub Action integrates [Rami](https://rami.review) into your CI/CD pipeline to report on code review findings.
 
-## Features
+## How It Works
 
-- Automated AI code review on every pull request
-- Configurable severity thresholds for blocking merges
-- Inline annotations on changed files
-- OIDC-based authentication (no API keys required)
+1. **Webhook-triggered reviews**: When you push to a PR, the Rami GitHub App automatically triggers a review via webhooks
+2. **This action waits**: The action polls for the review to complete and reports the results
+3. **CI integration**: Results appear as GitHub annotations and action outputs
+
+The action does NOT trigger reviews - it only waits for and reports on webhook-initiated reviews.
 
 ## Prerequisites
 
@@ -38,7 +39,7 @@ jobs:
         uses: rami-code-review/actions@v1
 ```
 
-### With Options
+### With Custom Failure Threshold
 
 ```yaml
 - name: Rami Code Review
@@ -47,9 +48,6 @@ jobs:
     # Fail the action if issues at this severity or above are found
     # Options: blocking, high, medium, low, none
     fail_on: 'high'
-
-    # Whether to post review comments on the PR
-    post_comments: 'true'
 ```
 
 ### Using Outputs
@@ -66,28 +64,11 @@ jobs:
     echo "Blocking: ${{ steps.review.outputs.blocking_count }}"
 ```
 
-### Manual PR Specification
-
-For workflows not triggered by `pull_request` events:
-
-```yaml
-- name: Rami Code Review
-  uses: rami-code-review/actions@v1
-  with:
-    pr_url: 'https://github.com/owner/repo/pull/123'
-    # Or use pr_number instead:
-    # pr_number: 123
-```
-
 ## Inputs
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `pr_url` | Pull request URL to review | No | Auto-detected |
-| `pr_number` | Pull request number | No | Auto-detected |
 | `fail_on` | Severity level that causes failure: `blocking`, `high`, `medium`, `low`, `none` | No | `blocking` |
-| `post_comments` | Whether to post review comments | No | `true` |
-| `api_url` | Rami API URL | No | `https://rami.review` |
 
 ## Outputs
 
@@ -114,21 +95,6 @@ ignore_paths:
   - "**/*.generated.go"
 ```
 
-## How It Works
-
-1. **Authentication**: The action uses GitHub's OIDC tokens to authenticate with Rami. No API keys or secrets are required.
-
-2. **Review Process**: Rami analyzes the PR diff using AI to identify potential issues including:
-   - Security vulnerabilities
-   - Logic errors
-   - Performance problems
-   - Code style issues
-
-3. **Results**: Issues are reported as:
-   - GitHub annotations (visible in the Files Changed tab)
-   - PR review comments (if `post_comments` is enabled)
-   - Action outputs (for use in subsequent steps)
-
 ## Troubleshooting
 
 ### "OIDC authentication required"
@@ -144,9 +110,9 @@ permissions:
 
 The Rami GitHub App must be installed on your repository. Visit the [Rami GitHub App](https://github.com/apps/rami-code-remeow) to install it.
 
-### "Could not determine PR number"
+### "Review not found"
 
-If running on a non-PR event (like `push`), you must provide `pr_url` or `pr_number` explicitly.
+The review may not have been triggered yet. Ensure the Rami GitHub App is installed and the webhook is configured correctly. The action will wait for the review to complete.
 
 ## License
 

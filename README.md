@@ -97,18 +97,12 @@ jobs:
 
 ## Repository Configuration
 
-Create a `.rami.yml` file in your repository to customize review behavior. Rami looks for configuration in these locations (in order):
-
-1. `.rami.yml`
-2. `.rami.yaml`
-3. `.github/rami.yml`
-4. `.github/rami.yaml`
+Create a `.rami.yml` file in your repository root to customize review behavior.
 
 ### Example Configuration
 
 ```yaml
 # .rami.yml
-version: "1"
 
 # Filter out issues below this severity (default: low)
 # Options: blocking, high, medium, low
@@ -129,9 +123,6 @@ ignore_paths:
 include_paths:
   - "src/**"
   - "lib/**"
-
-# Review preset: strict, standard, or lenient
-preset: standard
 ```
 
 ## Troubleshooting

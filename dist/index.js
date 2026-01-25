@@ -35243,7 +35243,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const github = __importStar(__nccwpck_require__(3228));
 const api_1 = __nccwpck_require__(6879);
-const API_URL = 'https://rami.review';
+const API_URL = 'https://rami.reviews';
 async function run() {
     try {
         const failOn = core.getInput('fail_on') || 'blocking';
@@ -35254,7 +35254,7 @@ async function run() {
         }
         core.info(`Checking review status for PR #${prNumber}...`);
         core.info(`Fail on: ${failOn}`);
-        const oidcToken = await core.getIDToken('https://rami.review');
+        const oidcToken = await core.getIDToken('https://rami.reviews');
         const client = new api_1.RamiClient(API_URL, oidcToken);
         const response = await client.status({ pr_number: prNumber, fail_on: failOn });
         setOutputs(response);

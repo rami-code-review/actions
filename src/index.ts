@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { RamiClient, StatusResponse } from './api';
 
-const API_URL = 'https://rami.review';
+const API_URL = 'https://rami.reviews';
 
 async function run(): Promise<void> {
   try {
@@ -19,7 +19,7 @@ async function run(): Promise<void> {
     core.info(`Checking review status for PR #${prNumber}...`);
     core.info(`Fail on: ${failOn}`);
 
-    const oidcToken = await core.getIDToken('https://rami.review');
+    const oidcToken = await core.getIDToken('https://rami.reviews');
 
     const client = new RamiClient(API_URL, oidcToken);
     const response = await client.status({ pr_number: prNumber, fail_on: failOn });

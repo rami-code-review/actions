@@ -125,8 +125,9 @@ The webhook-triggered review may not have started yet. Possible causes:
 
 The action waits up to 5 minutes for reviews to complete. If your reviews consistently take longer:
 - Reduce the number of files changed per PR
-- Use `ignore_paths` in `.rami.yml` to exclude generated or vendor files
 - Split large PRs into smaller ones
+
+> **Note**: Rami automatically skips vendor directories, generated code, lock files, binaries, and documentation files.
 
 ## Links
 

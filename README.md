@@ -114,20 +114,14 @@ Your organization or personal account needs the appropriate plan:
 
 Visit [rami.reviews/pricing](https://rami.reviews/pricing) for plan details.
 
-### "Review not found" / "No review found for this PR"
+### "Review did not complete within 300 seconds"
 
-The webhook-triggered review may not have started yet. Possible causes:
-- The [Rami GitHub App](https://github.com/apps/rami-code-remeow) is not installed on the repository
-- The webhook hasn't been processed yet (the action will wait up to 5 minutes)
-- The PR was created before the app was installed
+The action polls for up to 5 minutes waiting for the review to complete. If it times out:
 
-### Action times out or shows "in_progress"
+1. **Check the Rami GitHub App is installed**: Visit [github.com/apps/rami-code-remeow](https://github.com/apps/rami-code-remeow) to install it on your repository
+2. **Large PRs take longer**: Reviews with many files may exceed 5 minutes. Consider splitting into smaller PRs
 
-The action waits up to 5 minutes for reviews to complete. If your reviews consistently take longer:
-- Reduce the number of files changed per PR
-- Split large PRs into smaller ones
-
-> **Note**: Rami automatically skips vendor directories, generated code, lock files, binaries, and documentation files.
+> **Note**: Rami automatically skips vendor directories, generated code, lock files, binaries, and documentation files—these don't slow down reviews.
 
 ## Links
 

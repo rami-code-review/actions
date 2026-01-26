@@ -69,7 +69,7 @@ jobs:
 
 | Input | Description | Required | Default |
 |-------|-------------|----------|---------|
-| `fail_on` | Severity level that causes failure: `blocking`, `high`, `medium`, `low`, `none` | No | `blocking` |
+| `fail_on` | Severity level that causes failure: `blocking`, `high`, `medium`, `low`, `none` | No | `low` |
 
 ## Outputs
 

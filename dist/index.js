@@ -35267,7 +35267,7 @@ async function sleep(ms) {
 }
 async function run() {
     try {
-        const failOn = core.getInput('fail_on') || 'blocking';
+        const failOn = core.getInput('fail_on') || 'low';
         // Get PR number from GitHub context
         const prNumber = github.context.payload.pull_request?.number;
         if (!prNumber) {

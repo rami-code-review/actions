@@ -10,7 +10,7 @@ inputs:
   fail_on:
     description: 'Severity level that causes the action to fail: blocking, high, medium, low, none'
     required: false
-    default: 'blocking'
+    default: 'low'
 
 outputs:
   status:

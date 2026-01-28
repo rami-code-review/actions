@@ -40,6 +40,11 @@ export interface CallbackResponse {
     expires_at?: string;
     message?: string;
 }
+export declare class RamiApiError extends Error {
+    readonly statusCode: number;
+    readonly shouldSkip: boolean;
+    constructor(message: string, statusCode: number, shouldSkip: boolean);
+}
 export declare class RamiClient {
     private baseUrl;
     private token;

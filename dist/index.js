@@ -35163,7 +35163,19 @@ function wrappy (fn, cb) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.RamiClient = void 0;
+exports.RamiClient = exports.RamiApiError = void 0;
+class RamiApiError extends Error {
+    statusCode;
+    shouldSkip;
+    constructor(message, statusCode, shouldSkip) {
+        super(message);
+        this.statusCode = statusCode;
+        this.shouldSkip = shouldSkip;
+        this.name = 'RamiApiError';
+    }
+}
+exports.RamiApiError = RamiApiError;
+const SKIP_STATUS_CODES = [402, 403, 429];
 class RamiClient {
     baseUrl;
     token;
@@ -35187,7 +35199,8 @@ class RamiClient {
         });
         if (!response.ok) {
             const text = await response.text();
-            throw new Error(`Rami API request failed (${response.status}): ${text}`);
+            const shouldSkip = SKIP_STATUS_CODES.includes(response.status);
+            throw new RamiApiError(`Rami API request failed (${response.status}): ${text}`, response.status, shouldSkip);
         }
         const data = (await response.json());
         if (data.status === 'error' && data.error) {
@@ -35330,6 +35343,11 @@ async function run() {
         }
     }
     catch (error) {
+        if (error instanceof api_1.RamiApiError && error.shouldSkip) {
+            core.warning(`Skipping Rami review: ${error.message}`);
+            core.info('This may be due to plan limitations or quota. Visit https://rami.reviews/pricing for details.');
+            return;
+        }
         if (error instanceof Error) {
             core.setFailed(error.message);
         }

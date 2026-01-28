@@ -46,6 +46,19 @@ export interface CallbackResponse {
   message?: string;
 }
 
+export class RamiApiError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number,
+    public readonly shouldSkip: boolean
+  ) {
+    super(message);
+    this.name = 'RamiApiError';
+  }
+}
+
+const SKIP_STATUS_CODES = [402, 403, 429];
+
 export class RamiClient {
   private baseUrl: string;
   private token: string;
@@ -74,7 +87,12 @@ export class RamiClient {
 
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`Rami API request failed (${response.status}): ${text}`);
+      const shouldSkip = SKIP_STATUS_CODES.includes(response.status);
+      throw new RamiApiError(
+        `Rami API request failed (${response.status}): ${text}`,
+        response.status,
+        shouldSkip
+      );
     }
 
     const data = (await response.json()) as StatusResponse;

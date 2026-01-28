@@ -1,4 +1,4 @@
-import { RamiClient, StatusResponse, CallbackResponse } from './api';
+import { RamiClient, RamiApiError, StatusResponse, CallbackResponse } from './api';
 
 describe('RamiClient', () => {
   const mockToken = 'mock-oidc-token';
@@ -102,6 +102,46 @@ describe('RamiClient', () => {
       const client = new RamiClient(baseUrl, mockToken);
 
       await expect(client.status({ pr_number: 789 })).rejects.toThrow('Rami API request failed (500): Internal Server Error');
+    });
+
+    it.each([402, 403, 429])('should throw RamiApiError with shouldSkip=true for status %d', async (statusCode) => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: statusCode,
+        text: () => Promise.resolve('Plan or quota error'),
+      } as Response);
+
+      const client = new RamiClient(baseUrl, mockToken);
+
+      try {
+        await client.status({ pr_number: 789 });
+        fail('Expected an error to be thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(RamiApiError);
+        const apiError = error as RamiApiError;
+        expect(apiError.statusCode).toBe(statusCode);
+        expect(apiError.shouldSkip).toBe(true);
+      }
+    });
+
+    it('should throw RamiApiError with shouldSkip=false for non-skip status codes', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve('Internal Server Error'),
+      } as Response);
+
+      const client = new RamiClient(baseUrl, mockToken);
+
+      try {
+        await client.status({ pr_number: 789 });
+        fail('Expected an error to be thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(RamiApiError);
+        const apiError = error as RamiApiError;
+        expect(apiError.statusCode).toBe(500);
+        expect(apiError.shouldSkip).toBe(false);
+      }
     });
 
     it('should throw on error status in response', async () => {

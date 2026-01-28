@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { RamiClient, StatusResponse } from './api';
+import { RamiClient, RamiApiError, StatusResponse } from './api';
 
 const API_URL = 'https://rami.reviews';
 const MAX_POLL_TIME_MS = 5 * 60 * 1000; // 5 minutes
@@ -90,6 +90,13 @@ async function run(): Promise<void> {
       );
     }
   } catch (error) {
+    if (error instanceof RamiApiError && error.shouldSkip) {
+      core.warning(`Skipping Rami review: ${error.message}`);
+      core.info(
+        'This may be due to plan limitations or quota. Visit https://rami.reviews/pricing for details.'
+      );
+      return;
+    }
     if (error instanceof Error) {
       core.setFailed(error.message);
     } else {

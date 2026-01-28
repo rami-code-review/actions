@@ -57,7 +57,7 @@ export class RamiApiError extends Error {
   }
 }
 
-const SKIP_STATUS_CODES = [402, 403, 429];
+const SKIP_STATUS_CODES = [402, 403, 429, 500, 502, 503, 504];
 
 export class RamiClient {
   private baseUrl: string;

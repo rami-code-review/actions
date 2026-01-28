@@ -104,7 +104,7 @@ describe('RamiClient', () => {
       await expect(client.status({ pr_number: 789 })).rejects.toThrow('Rami API request failed (500): Internal Server Error');
     });
 
-    it.each([402, 403, 429])('should throw RamiApiError with shouldSkip=true for status %d', async (statusCode) => {
+    it.each([402, 403, 429, 500, 502, 503, 504])('should throw RamiApiError with shouldSkip=true for status %d', async (statusCode) => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: false,
         status: statusCode,
@@ -127,8 +127,8 @@ describe('RamiClient', () => {
     it('should throw RamiApiError with shouldSkip=false for non-skip status codes', async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: false,
-        status: 500,
-        text: () => Promise.resolve('Internal Server Error'),
+        status: 400,
+        text: () => Promise.resolve('Bad Request'),
       } as Response);
 
       const client = new RamiClient(baseUrl, mockToken);
@@ -139,7 +139,7 @@ describe('RamiClient', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(RamiApiError);
         const apiError = error as RamiApiError;
-        expect(apiError.statusCode).toBe(500);
+        expect(apiError.statusCode).toBe(400);
         expect(apiError.shouldSkip).toBe(false);
       }
     });

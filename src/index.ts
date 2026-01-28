@@ -95,6 +95,9 @@ async function run(): Promise<void> {
       core.info(
         'This may be due to plan limitations or quota. Visit https://rami.reviews/pricing for details.'
       );
+      core.setOutput('status', 'skipped');
+      core.setOutput('skipped', 'true');
+      core.setOutput('skip_reason', error.message);
       return;
     }
     if (error instanceof Error) {

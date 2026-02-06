@@ -1,5 +1,11 @@
 # Rami Code Review Action
 
+## Notes for Archive
+
+GitHub Actions feature has been archived in favor of Check Runs.
+
+---
+
 Wait for AI-powered code review results on your pull requests. This GitHub Action integrates [Rami](https://rami.reviews) into your CI/CD pipeline to report on code review findings.
 
 ## How It Works
